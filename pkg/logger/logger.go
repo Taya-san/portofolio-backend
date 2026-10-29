@@ -1,0 +1,95 @@
+package logger
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/rs/zerolog"
+)
+
+type Interface interface {
+	Debug(message any, args ...any)
+	Info(message string, args ...any)
+	Warn(message string, args ...any)
+	Error(message any, args ...any)
+	Fatal(message any, args ...any)
+}
+
+type Logger struct {
+	logger *zerolog.Logger
+}
+
+var _ Interface = (*Logger)(nil)
+
+func New(level string) *Logger {
+	var l zerolog.Level
+
+	switch strings.ToLower(level) {
+	case "error":
+		l = zerolog.ErrorLevel
+	case "warn":
+		l = zerolog.WarnLevel
+	case "info":
+		l = zerolog.InfoLevel
+	case "debug":
+		l = zerolog.DebugLevel
+	default:
+		l = zerolog.InfoLevel
+	}
+
+	zerolog.SetGlobalLevel(l)
+
+	skipFrameCount := 3
+	logger := zerolog.
+		New(os.Stdout).
+		With().
+		Timestamp().
+		CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).
+		Logger()
+
+	return &Logger{
+		logger: new(logger),
+	}
+}
+
+func (l *Logger) log(level zerolog.Level, message string, args ...any) {
+	if len(args) == 0 {
+		l.logger.WithLevel(level).Msg(message)
+	} else {
+		l.logger.WithLevel(level).Msgf(message, args...)
+	}
+}
+
+func (l *Logger) msg(level zerolog.Level, message any, args ...any) {
+	switch msg := message.(type) {
+	case error:
+		l.log(level, msg.Error(), args...)
+	case string:
+		l.log(level, msg, args...)
+	default:
+		l.log(level, fmt.Sprintf("%s Message %v has Unknown Type %v", level, message, msg), args...)
+	}
+}
+
+func (l *Logger) Debug(message any, args ...any) {
+	l.msg(zerolog.DebugLevel, message, args...)
+}
+
+func (l *Logger) Info(message string, args ...any) {
+	l.msg(zerolog.InfoLevel, message, args...)
+}
+
+func (l *Logger) Warn(message string, args ...any) {
+	l.msg(zerolog.WarnLevel, message, args...)
+}
+
+func (l *Logger) Error(message any, args ...any) {
+	l.msg(zerolog.ErrorLevel, message, args...)
+}
+
+func (l *Logger) Fatal(message any, args ...any) {
+	l.msg(zerolog.FatalLevel, message, args...)
+
+	os.Exit(1)
+}

@@ -1,0 +1,41 @@
+   # ---- binaries ----
+   # `go build .` names the binary after the last element of your module path,
+   # which is easy to forget. Build with `go build -o bin/app .` instead.
+   bin/
+   *.exe
+   *.exe~
+   *.dll
+   *.so
+   *.dylib
+
+   # ---- test artifacts ----
+   *.test
+   *.out
+   coverage.*
+   !coverage.go
+   *.coverprofile
+   profile.cov
+
+   # ---- database (SQLite) ----
+   *.db
+   *.db-shm
+   *.db-wal
+   *.sqlite
+   *.sqlite3
+
+   # ---- secrets ----
+   .env
+   .env.local
+   *.pem
+
+   # ---- logs ----
+   *.log
+
+   # ---- Go workspace (only if you use go.work) ----
+   go.work
+   go.work.sum
+
+   # ---- editor / OS ----
+   .DS_Store
+   .idea/
+   .vscode/
