@@ -17,6 +17,12 @@ type (
 		Log     log
 		App     app
 		JWT     jwt
+		Github  github
+	}
+
+	github struct {
+		ProfileName string `env:"GITHUB_PROFILE_NAME, required"`
+		Token       string `env:"GITHUB_TOKEN, required"`
 	}
 
 	jwt struct {

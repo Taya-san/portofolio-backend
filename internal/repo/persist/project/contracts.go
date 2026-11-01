@@ -6,7 +6,7 @@ import (
 	"github.com/Taya-san/portofolio-backend/internal/entity"
 )
 
-//go:generate mockgen -source=contracts.go -destination=../usecase/mocks_repo_project_test.go -package=usecase_test
+//go:generate mockgen -source=contracts.go -destination=.../usecase/mocks_repo_project_test.go -package=usecase_test
 
 type (
 	ProjectRepo interface {
@@ -15,6 +15,7 @@ type (
 		List(ctx context.Context, filter ProjectFilter) ([]entity.Project, int, error)
 		Update(ctx context.Context, project *entity.Project) error
 		Delete(ctx context.Context, projectID string) error
+		UpStore(ctx context.Context, project *entity.Project) error
 	}
 
 	ProjectFilter struct {

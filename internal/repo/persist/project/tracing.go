@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const _tracerName = "github.com/Taya-san/portofolio-backend/internal/repo/project"
+const _tracerName = "github.com/Taya-san/portofolio-backend/internal/repo/persist/project"
 
 type tracedRepo struct {
 	next ProjectRepo
@@ -73,6 +73,15 @@ func (pr *tracedRepo) Delete(ctx context.Context, projectID string) error {
 	ctx, span := startSpan(ctx, "ProjectRepo.Delete", attribute.String("project.id", projectID))
 
 	err := pr.next.Delete(ctx, projectID)
+	endSpan(span, err)
+
+	return err
+}
+
+func (pr *tracedRepo) UpStore(ctx context.Context, project *entity.Project) error {
+	ctx, span := startSpan(ctx, "ProjectRepo.UpStore")
+
+	err := pr.next.UpStore(ctx, project)
 	endSpan(span, err)
 
 	return err

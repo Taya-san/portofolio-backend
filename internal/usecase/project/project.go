@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Taya-san/portofolio-backend/internal/entity"
-	"github.com/Taya-san/portofolio-backend/internal/repo/project"
+	githubproject "github.com/Taya-san/portofolio-backend/internal/repo/persist/github_project"
+	"github.com/Taya-san/portofolio-backend/internal/repo/persist/project"
 	"github.com/google/uuid"
 )
 
 type UseCase struct {
-	repo project.ProjectRepo
+	repo       project.ProjectRepo
+	githubRepo githubproject.GithubProjectRepo
 }
 
 func New(r project.ProjectRepo) Project {
@@ -20,16 +21,15 @@ func New(r project.ProjectRepo) Project {
 }
 
 func (uc *UseCase) Create(ctx context.Context, projectItem ProjectItem) (entity.Project, error) {
-	now := time.Now().UTC()
 
 	project := entity.Project{
 		ID:         uuid.New().String(),
 		ProjectUrl: projectItem.ProjectUrl,
 		Title:      projectItem.Title,
 		Languages:  projectItem.Languages,
-		CreatedAt:  now,
+		CreatedAt:  projectItem.CreatedAt,
 		Visible:    projectItem.Visible,
-		Custom:     projectItem.Custom,
+		Custom:     true,
 		Body:       projectItem.Body,
 	}
 
@@ -77,8 +77,10 @@ func (uc *UseCase) Update(ctx context.Context, projectID string, projectItem Pro
 
 	project.ProjectUrl = projectItem.ProjectUrl
 	project.Title = projectItem.Title
+	project.Description = projectItem.Description
 	project.Languages = projectItem.Languages
 	project.Visible = projectItem.Visible
+	project.Custom = true
 	project.Body = projectItem.Body
 
 	err = uc.repo.Update(ctx, &project)
@@ -93,6 +95,61 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 	err := uc.repo.Delete(ctx, projectID)
 	if err != nil {
 		return fmt.Errorf("ProjectUseCase - Delete - uc.repo.Delete: %w", err)
+	}
+
+	return nil
+}
+
+func (uc *UseCase) SyncAll(ctx context.Context) error {
+	githubProjects, _, err := uc.githubRepo.List(ctx)
+	if err != nil {
+		return fmt.Errorf("ProjectUseCase - SyncAll - uc.githubRepo.List: %w", err)
+	}
+
+	for _, githubProject := range githubProjects {
+		err := uc.repo.UpStore(ctx, &entity.Project{
+			ID:          uuid.NewString(),
+			ProjectUrl:  githubProject.ProjectUrl,
+			Title:       githubProject.Title,
+			Description: githubProject.Description,
+			Languages:   githubProject.Languages,
+			CreatedAt:   githubProject.CreatedAt,
+			Visible:     true,
+			Custom:      false,
+			Body:        githubProject.Body,
+		})
+		if err != nil {
+			return fmt.Errorf("ProjectUseCase - SyncAll - uc.repo.UpStore: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (uc *UseCase) SyncByProjectID(ctx context.Context, projectID string) error {
+	project, err := uc.repo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("ProjectUseCase - SyncByProjectID - uc.repo.GetByID: %w", err)
+	}
+
+	githubProject, err := uc.githubRepo.GetByProjectUrl(ctx, project.ProjectUrl)
+	if err != nil {
+		return fmt.Errorf("ProjectUseCase - SyncAll - uc.githubRepo.GetByProjectUrl: %w", err)
+	}
+
+	err = uc.repo.Update(ctx, &entity.Project{
+		ID:          uuid.NewString(),
+		ProjectUrl:  githubProject.ProjectUrl,
+		Title:       githubProject.Title,
+		Description: githubProject.Description,
+		Languages:   githubProject.Languages,
+		CreatedAt:   githubProject.CreatedAt,
+		Visible:     project.Visible,
+		Custom:      false,
+		Body:        githubProject.Body,
+	})
+	if err != nil {
+		return fmt.Errorf("ProjectUseCase - SyncAll - uc.repo.UpStore: %w", err)
 	}
 
 	return nil

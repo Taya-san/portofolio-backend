@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Taya-san/portofolio-backend/internal/repo/user"
+	"github.com/Taya-san/portofolio-backend/internal/repo/persist/user"
 	"github.com/Taya-san/portofolio-backend/pkg/jwt"
 )
 

@@ -10,8 +10,8 @@ import (
 
 	"github.com/Taya-san/portofolio-backend/config"
 	"github.com/Taya-san/portofolio-backend/internal/controller"
-	persistProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/project"
-	persistUserRepo "github.com/Taya-san/portofolio-backend/internal/repo/user"
+	persistProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/project"
+	persistUserRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/user"
 	"github.com/Taya-san/portofolio-backend/internal/usecase/project"
 	"github.com/Taya-san/portofolio-backend/internal/usecase/user"
 	"github.com/Taya-san/portofolio-backend/pkg/httpserver"

@@ -77,3 +77,21 @@ func (p *tracedUseCase) Delete(ctx context.Context, projectID string) error {
 
 	return err
 }
+
+func (p *tracedUseCase) SyncAll(ctx context.Context) error {
+	ctx, span := startSpan(ctx, "ProjectUseCase.SyncAll")
+
+	err := p.next.SyncAll(ctx)
+	endSpan(span, err)
+
+	return err
+}
+
+func (p *tracedUseCase) SyncByProjectID(ctx context.Context, projectID string) error {
+	ctx, span := startSpan(ctx, "ProjectUseCase.Delete", attribute.String("project.id", projectID))
+
+	err := p.next.SyncByProjectID(ctx, projectID)
+	endSpan(span, err)
+
+	return err
+}

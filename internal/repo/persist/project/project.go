@@ -25,11 +25,12 @@ func (r *Repo) Store(ctx context.Context, project *entity.Project) error {
 	}
 
 	_, err = r.ExecContext(ctx,
-		`INSERT INTO projects (id, project_url, title, languages, created_at, visible, custom, body)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO projects (id, project_url, title, languages, description, created_at, visible, custom, body)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		project.ID,
 		project.ProjectUrl,
 		project.Title,
+		project.Description,
 		string(langs),
 		project.CreatedAt,
 		project.Visible,
@@ -48,7 +49,7 @@ func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, e
 	var langs string
 
 	err := r.QueryRowContext(ctx,
-		`SELECT id, project_url, title, languages, created_at, visible, custom, body
+		`SELECT id, project_url, title, description, languages, created_at, visible, custom, body
 		FROM projects
 		WHERE id = ?`,
 		projectID,
@@ -56,6 +57,7 @@ func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, e
 		&result.ID,
 		&result.ProjectUrl,
 		&result.Title,
+		&result.Description,
 		&langs,
 		&result.CreatedAt,
 		&result.Visible,
@@ -96,7 +98,7 @@ func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project
 	}
 
 	rows, err := r.QueryContext(ctx,
-		`SELECT id, project_url, title, languages, created_at, visible, custom, body
+		`SELECT id, project_url, title, description, languages, created_at, visible, custom, body
 		FROM projects`+where,
 	)
 	if err != nil {
@@ -111,6 +113,7 @@ func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project
 			&project.ID,
 			&project.ProjectUrl,
 			&project.Title,
+			&project.Description,
 			&langs,
 			&project.CreatedAt,
 			&project.Visible,
@@ -143,10 +146,11 @@ func (r *Repo) Update(ctx context.Context, project *entity.Project) error {
 
 	result, err := r.ExecContext(ctx,
 		`UPDATE projects
-			SET project_url = ?, title = ?, languages = ?, created_at = ?, visible = ?, custom = ?, body = ?
+			SET project_url = ?, title = ?, description = ?, languages = ?, created_at = ?, visible = ?, custom = ?, body = ?
 		 WHERE id = ?`,
 		project.ProjectUrl,
 		project.Title,
+		project.Description,
 		string(langs),
 		project.CreatedAt,
 		project.Visible,
@@ -185,6 +189,40 @@ func (r *Repo) Delete(ctx context.Context, projectID string) error {
 
 	if n == 0 {
 		return entity.ErrProjectNotFound
+	}
+
+	return nil
+}
+
+func (r *Repo) UpStore(ctx context.Context, project *entity.Project) error {
+	langs, err := json.Marshal(project.Languages)
+	if err != nil {
+		return fmt.Errorf("ProjectRepo - UpStore - json.Marshal: %w", err)
+	}
+
+	_, err = r.ExecContext(ctx,
+		`
+		INSERT INTO projects (id, project_url, title, description, languages, created_at, visible, custom, body)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (project_url) DO UPDATE SET
+		title = excluded.title,
+		description = excluded.description,
+		languages = excluded.languages,
+		body = excluded.body
+		WHERE custom = 0
+		`,
+		project.ID,
+		project.ProjectUrl,
+		project.Title,
+		project.Description,
+		string(langs),
+		project.CreatedAt,
+		project.Visible,
+		project.Custom,
+		project.Body,
+	)
+	if err != nil {
+		return fmt.Errorf("ProjectRepo - UpStore - r.ExecContext: %w", err)
 	}
 
 	return nil

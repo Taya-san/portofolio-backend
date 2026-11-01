@@ -1,4 +1,4 @@
-package user
+package githubproject
 
 import (
 	"context"
@@ -10,13 +10,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const _tracerName = "github.com/Taya-san/portofolio-backend/internal/repo/user"
+const _tracerName = "github.com/Taya-san/portofolio-backend/internal/repo/webapi/github_project"
 
 type tracedRepo struct {
-	next UserRepo
+	next GithubProjectApi
 }
 
-func newTraced(next UserRepo) UserRepo {
+func newTraced(next GithubProjectApi) GithubProjectApi {
 	return &tracedRepo{next: next}
 }
 
@@ -33,11 +33,11 @@ func endSpan(span trace.Span, err error) {
 	span.End()
 }
 
-func (ur *tracedRepo) ListPermittedPasswordHashes(ctx context.Context) ([]entity.User, error) {
-	ctx, span := startSpan(ctx, "UserRepo.ListPermittedPasswordHashes")
+func (pr *tracedRepo) Fetch(ctx context.Context) ([]entity.GithubProject, error) {
+	ctx, span := startSpan(ctx, "GithubProjectApi.Store")
 
-	results, err := ur.next.ListPermittedPasswordHashes(ctx)
+	allUserProjectsData, err := pr.next.Fetch(ctx)
 	endSpan(span, err)
 
-	return results, err
+	return allUserProjectsData, err
 }
