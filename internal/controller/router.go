@@ -6,6 +6,7 @@ import (
 	"github.com/Taya-san/portofolio-backend/config"
 	"github.com/Taya-san/portofolio-backend/internal/controller/middleware"
 	v1 "github.com/Taya-san/portofolio-backend/internal/controller/v1"
+	githubproject "github.com/Taya-san/portofolio-backend/internal/usecase/github_project"
 	projectusecase "github.com/Taya-san/portofolio-backend/internal/usecase/project"
 	userusecase "github.com/Taya-san/portofolio-backend/internal/usecase/user"
 	"github.com/Taya-san/portofolio-backend/pkg/jwt"
@@ -21,6 +22,7 @@ func NewRouter(
 	cfg *config.Config,
 	u userusecase.User,
 	p projectusecase.Project,
+	g githubproject.GithubProject,
 	jwtManager *jwt.Manager,
 	l logger.Interface,
 ) {
@@ -49,6 +51,7 @@ func NewRouter(
 			apiV1Group,
 			u,
 			p,
+			g,
 			jwtManager,
 			l,
 		)

@@ -81,10 +81,16 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %w", err)
 		}
-		header := resp.Header.Get("link")
+		header := resp.Header
 
 		if resp.StatusCode != http.StatusOK {
+			remaining := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Remaining")
 			resp.Body.Close()
+
+			if remaining == "0" {
+				return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: rate limit exhausted, reset at epoch %s", reset)
+			}
 			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %s", resp.Status)
 		}
 
@@ -97,7 +103,7 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 
 		allUserProjects = append(allUserProjects, userProjects...)
 
-		if !strings.Contains(header, `rel="next"`) {
+		if !strings.Contains(header.Get("link"), `rel="next"`) {
 			break
 		}
 	}
@@ -132,8 +138,17 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w", err)
 		}
+
+		header := resp.Header
+
 		if resp.StatusCode != http.StatusOK {
+			remaining := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Remaining")
 			resp.Body.Close()
+
+			if remaining == "0" {
+				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: rate limit exhausted, reset at epoch %s", reset)
+			}
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %s", resp.Status)
 		}
 
@@ -168,8 +183,16 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w", err)
 		}
 
+		header = resp.Header
+
 		if resp.StatusCode != http.StatusOK {
+			remaining := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Remaining")
 			resp.Body.Close()
+
+			if remaining == "0" {
+				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: rate limit exhausted, reset at epoch %s", reset)
+			}
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %s", resp.Status)
 		}
 

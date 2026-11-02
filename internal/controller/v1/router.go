@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/Taya-san/portofolio-backend/internal/controller/middleware"
+	githubproject "github.com/Taya-san/portofolio-backend/internal/usecase/github_project"
 	projectusecase "github.com/Taya-san/portofolio-backend/internal/usecase/project"
 	userusecase "github.com/Taya-san/portofolio-backend/internal/usecase/user"
 	"github.com/Taya-san/portofolio-backend/pkg/jwt"
@@ -14,12 +15,14 @@ func NewRoutes(
 	apiV1Group fiber.Router,
 	u userusecase.User,
 	p projectusecase.Project,
+	g githubproject.GithubProject,
 	jwtManager *jwt.Manager,
 	l logger.Interface,
 ) {
 	r := &V1{
 		u: u,
 		p: p,
+		g: g,
 		l: l,
 		v: validator.New(validator.WithRequiredStructEnabled()),
 	}
@@ -38,5 +41,6 @@ func NewRoutes(
 		protectedEdit.Post("/", r.createProject)
 		protectedEdit.Put("/:id", r.updateProject)
 		protectedEdit.Delete("/:id", r.deleteProject)
+		protectedEdit.Get("/githubproject", r.getGithubProject)
 	}
 }

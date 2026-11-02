@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Taya-san/portofolio-backend/internal/entity"
 	githubprojectpersist "github.com/Taya-san/portofolio-backend/internal/repo/persist/github_project"
 	githubprojectwebapi "github.com/Taya-san/portofolio-backend/internal/repo/webapi/github_project"
 )
@@ -34,4 +35,13 @@ func (uc *UseCase) RefreshMirror(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (uc *UseCase) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.GithubProject, error) {
+	githubProject, err := uc.repoPersist.GetByProjectUrl(ctx, projectUrl)
+	if err != nil {
+		return entity.GithubProject{}, fmt.Errorf("GithubProjectUseCase - GetByProjectUrl - uc.repoPersist.GetByProjectUrl: %w", err)
+	}
+
+	return githubProject, err
 }

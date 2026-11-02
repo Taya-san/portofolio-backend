@@ -30,7 +30,7 @@ func (r *V1) createProject(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&body); err != nil {
 		r.l.Error(err, "REST API - V1 - createProject")
 
-		return errorResponse(ctx, http.StatusUnauthorized, "unauthorized")
+		return errorResponse(ctx, http.StatusBadRequest, "invalid request body")
 	}
 
 	if err := r.v.Struct(body); err != nil {

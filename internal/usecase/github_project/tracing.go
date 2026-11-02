@@ -3,6 +3,7 @@ package githubproject
 import (
 	"context"
 
+	"github.com/Taya-san/portofolio-backend/internal/entity"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -39,4 +40,13 @@ func (p *tracedUseCase) RefreshMirror(ctx context.Context) error {
 	endSpan(span, err)
 
 	return err
+}
+
+func (p *tracedUseCase) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.GithubProject, error) {
+	ctx, span := startSpan(ctx, "GithubProjectUseCase.RefreshMirror", attribute.String("project.url", projectUrl))
+
+	githubProject, err := p.next.GetByProjectUrl(ctx, projectUrl)
+	endSpan(span, err)
+
+	return githubProject, err
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Taya-san/portofolio-backend/internal/scheduler/jobs"
-	"github.com/Taya-san/portofolio-backend/internal/scheduler/jobs/project"
+	"github.com/Taya-san/portofolio-backend/internal/scheduler/job"
+	"github.com/Taya-san/portofolio-backend/internal/scheduler/job/project"
 	githubproject "github.com/Taya-san/portofolio-backend/internal/usecase/github_project"
 	"github.com/go-co-op/gocron/v2"
 )
@@ -15,7 +15,7 @@ func NewScheduler(
 	l gocron.Logger,
 	uc githubproject.GithubProject,
 ) (gocron.Scheduler, error) {
-	var jobs []jobs.Job
+	var jobs []job.Job
 
 	scheduler, err := gocron.NewScheduler(
 		gocron.WithGlobalJobOptions(
