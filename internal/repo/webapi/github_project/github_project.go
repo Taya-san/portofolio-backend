@@ -81,11 +81,12 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %w", err)
 		}
+
 		header := resp.Header
 
 		if resp.StatusCode != http.StatusOK {
 			remaining := header.Get("X-RateLimit-Remaining")
-			reset := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Reset")
 			resp.Body.Close()
 
 			if remaining == "0" {
@@ -113,9 +114,11 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 
 func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProject) ([]entity.GithubProject, error) {
 	allProjects := make([]entity.GithubProject, 0, len(allUserProjects))
-	var fetchedLangs map[string]int
 
 	for _, userProject := range allUserProjects {
+		var fetchedLangs map[string]int
+		var projectBody string
+
 		url := fmt.Sprintf(
 			"https://api.github.com/repos/%s/readme",
 			userProject.FullName,
@@ -141,24 +144,28 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 
 		header := resp.Header
 
-		if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			projectBody = ""
+
+		} else if resp.StatusCode != http.StatusOK {
 			remaining := header.Get("X-RateLimit-Remaining")
-			reset := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Reset")
 			resp.Body.Close()
 
 			if remaining == "0" {
 				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: rate limit exhausted, reset at epoch %s", reset)
 			}
+
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %s", resp.Status)
-		}
+		} else {
+			projectBodyBytes, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - io.ReadAll: %w", err)
+			}
 
-		projectBodyBytes, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - io.ReadAll: %w", err)
+			projectBody = string(projectBodyBytes)
 		}
-
-		projectBody := string(projectBodyBytes)
 
 		url = fmt.Sprintf(
 			"https://api.github.com/repos/%s/languages",
@@ -187,7 +194,7 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 
 		if resp.StatusCode != http.StatusOK {
 			remaining := header.Get("X-RateLimit-Remaining")
-			reset := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Reset")
 			resp.Body.Close()
 
 			if remaining == "0" {

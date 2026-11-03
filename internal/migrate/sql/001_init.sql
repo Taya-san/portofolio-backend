@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at    TEXT        NOT NULL,
   visible       BOOLEAN     NOT NULL DEFAULT 1,
   custom        BOOLEAN     NOT NULL DEFAULT 0,
-  body          TEXT        NOT NULL DEFAULT '',
+  body          TEXT        NOT NULL DEFAULT ''
 )

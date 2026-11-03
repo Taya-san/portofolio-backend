@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/ansrivas/fiberprometheus/v2 v2.18.0
 	github.com/caarlos0/env/v11 v11.4.1
+	github.com/go-co-op/gocron/v2 v2.23.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/goccy/go-json v0.11.2
 	github.com/gofiber/contrib/otelfiber/v2 v2.2.3
@@ -17,6 +18,7 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
+	go.uber.org/mock v0.6.0
 	golang.org/x/sync v0.24.0
 	modernc.org/sqlite v1.61.0
 )
@@ -30,7 +32,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
-	github.com/go-co-op/gocron/v2 v2.23.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect

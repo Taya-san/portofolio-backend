@@ -21,8 +21,8 @@ type (
 	}
 
 	github struct {
-		ProfileName string `env:"GITHUB_PROFILE_NAME, required"`
-		Token       string `env:"GITHUB_TOKEN, required"`
+		ProfileName string `env:"GITHUB_PROFILE_NAME,required"`
+		Token       string `env:"GITHUB_TOKEN,required"`
 	}
 
 	jwt struct {

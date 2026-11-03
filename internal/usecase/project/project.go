@@ -23,14 +23,15 @@ func New(r project.ProjectRepo) Project {
 func (uc *UseCase) Create(ctx context.Context, projectItem ProjectItem) (entity.Project, error) {
 
 	project := entity.Project{
-		ID:         uuid.New().String(),
-		ProjectUrl: projectItem.ProjectUrl,
-		Title:      projectItem.Title,
-		Languages:  projectItem.Languages,
-		CreatedAt:  projectItem.CreatedAt,
-		Visible:    projectItem.Visible,
-		Custom:     true,
-		Body:       projectItem.Body,
+		ID:          uuid.New().String(),
+		ProjectUrl:  projectItem.ProjectUrl,
+		Title:       projectItem.Title,
+		Languages:   projectItem.Languages,
+		Description: projectItem.Description,
+		CreatedAt:   projectItem.CreatedAt,
+		Visible:     projectItem.Visible,
+		Custom:      true,
+		Body:        projectItem.Body,
 	}
 
 	err := uc.repo.Store(ctx, &project)
@@ -138,13 +139,13 @@ func (uc *UseCase) SyncByProjectID(ctx context.Context, projectID string) error 
 	}
 
 	err = uc.repo.Update(ctx, &entity.Project{
-		ID:          uuid.NewString(),
+		ID:          projectID,
 		ProjectUrl:  githubProject.ProjectUrl,
 		Title:       githubProject.Title,
 		Description: githubProject.Description,
 		Languages:   githubProject.Languages,
 		CreatedAt:   githubProject.CreatedAt,
-		Visible:     project.Visible,
+		Visible:     true,
 		Custom:      false,
 		Body:        githubProject.Body,
 	})

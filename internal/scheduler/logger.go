@@ -11,7 +11,7 @@ type GocronLogger struct {
 
 var _ gocron.Logger = GocronLogger{}
 
-func (g GocronLogger) Debug(msg string, args ...any) { g.L.Debug(msg, args) }
-func (g GocronLogger) Error(msg string, args ...any) { g.L.Error(msg, args) }
-func (g GocronLogger) Info(msg string, args ...any)  { g.L.Info(msg, args) }
-func (g GocronLogger) Warn(msg string, args ...any)  { g.L.Warn(msg, args) }
+func (g GocronLogger) Debug(msg string, args ...any) { g.L.Debug(msg, args...) }
+func (g GocronLogger) Error(msg string, args ...any) { g.L.Error(msg, args...) }
+func (g GocronLogger) Info(msg string, args ...any)  { g.L.Info(msg, args...) }
+func (g GocronLogger) Warn(msg string, args ...any)  { g.L.Warn(msg, args...) }

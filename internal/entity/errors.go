@@ -4,7 +4,7 @@ import "errors"
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrProjectNotFound    = errors.New("task not found")
-	ErrProjectForbidden   = errors.New("unauthorized task activity")
+	ErrProjectNotFound    = errors.New("project not found")
+	ErrProjectForbidden   = errors.New("unauthorized project activity")
 	ErrTitleInvalid       = errors.New("project title cannot be blank")
 )

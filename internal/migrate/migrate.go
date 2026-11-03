@@ -19,8 +19,8 @@ func DB(ctx context.Context, db *sql.DB) error {
 	}
 
 	if _, err := db.ExecContext(ctx,
-		`CREATE TABLE IF NOT EXIST schema_migrations (
-			name				TEXT PRIMARY KEY
+		`CREATE TABLE IF NOT EXISTS schema_migrations (
+			name				TEXT PRIMARY KEY,
 			applied_at	TEXT NOT NULL
 		)`); err != nil {
 		return fmt.Errorf("Migrate - Create schema_migrations: %w", err)

@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Taya-san/portofolio-backend/config"
 	"github.com/Taya-san/portofolio-backend/internal/controller"
+	"github.com/Taya-san/portofolio-backend/internal/migrate"
 	persistGithubProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/github_project"
 	persistProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/project"
 	persistUserRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/user"
@@ -54,17 +56,13 @@ func initServer(cfg *config.Config, uc useCases, jwtManager *jwt.Manager, l logg
 	return httpServer
 }
 
-func waitForShutdown(s *httpserver.Server, l logger.Interface, scheduler gocron.Scheduler) {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	var err error
+func waitForShutdown(ctx context.Context, s *httpserver.Server, l logger.Interface, scheduler gocron.Scheduler) {
 
 	select {
-	case sig := <-interrupt:
-		l.Info("app - Run - signal: %s", sig.String())
-	case err = <-s.Notify():
-		l.Error(fmt.Errorf("app - Run - httpserver.Server.Notify: %w", err))
+	case <-ctx.Done():
+		l.Info("app - waitForShutdown - kill/term signal recieved")
+	case err := <-s.Notify():
+		l.Error(fmt.Errorf("app - waitForShutdown - httpserver.Server.Notify: %w", err))
 	}
 
 	shutdownServer(s, l, scheduler)
@@ -72,13 +70,13 @@ func waitForShutdown(s *httpserver.Server, l logger.Interface, scheduler gocron.
 
 func shutdownServer(s *httpserver.Server, l logger.Interface, scheduler gocron.Scheduler) {
 	if err := s.Shutdown(); err != nil {
-		l.Error(fmt.Errorf("app - Run - httpserver.Server.Shutdown: %w", err))
+		l.Error(fmt.Errorf("app - shutdownServer - httpserver.Server.Shutdown: %w", err))
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := scheduler.ShutdownWithContext(ctx); err != nil {
-		l.Error(fmt.Errorf("app - Run - gocron.Scheduler.ShutdownWithContext: %w", err))
+		l.Error(fmt.Errorf("app - shutdownServer - gocron.Scheduler.ShutdownWithContext: %w", err))
 	}
 }
 
@@ -86,22 +84,6 @@ func Run(cfg *config.Config) {
 	l := logger.New(cfg.Log.Level)
 
 	ctx := context.Background()
-
-	shutdownTracing, err := tracing.New(ctx, tracing.Config{
-		Enabled:     cfg.Tracing.Enabled,
-		ServiceName: cfg.App.Name,
-		Version:     cfg.App.Version,
-		Prettier:    cfg.Tracing.Prettier,
-		SampleRate:  cfg.Tracing.SampleRate,
-	})
-	if err != nil {
-		l.Fatal(fmt.Errorf("app - Run - tracing.New: %w", err))
-	}
-	defer func() {
-		if err := shutdownTracing(ctx); err != nil {
-			l.Error(fmt.Errorf("app - Run - shutdownTracing: %w", err))
-		}
-	}()
 
 	db, err := sql.Open("sqlite",
 		"file:data.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)",
@@ -113,23 +95,85 @@ func Run(cfg *config.Config) {
 	defer db.Close()
 
 	if err := db.PingContext(ctx); err != nil {
+		db.Close()
 		l.Fatal(fmt.Errorf("app - Run - db.PingContext: %w", err))
 	}
+
+	err = migrate.DB(ctx, db)
+	if err != nil {
+		db.Close()
+		l.Fatal(fmt.Errorf("app - Run - migrate.DB: %w", err))
+	}
+
+	args := os.Args[1:]
+
+	if len(args) > 1 && !strings.HasPrefix(args[0], "-") {
+		cmd := strings.Join(args, " ")
+		switch cmd {
+		case "serve":
+			runServer(ctx, cfg, db, l)
+		case "refresh mirror":
+			refreshMirror(ctx, cfg, db, l)
+		default:
+			printGlobalHelp()
+		}
+	}
+}
+
+func printGlobalHelp() {
+	fmt.Println("Usage: backend <command>")
+	fmt.Println("\nAvailable Commands:")
+	fmt.Println("		serve								start the portofolio-website backend server")
+	fmt.Println("		refresh mirror			refresh the github projects mirror")
+}
+
+func refreshMirror(ctx context.Context, cfg *config.Config, db *sql.DB, l *logger.Logger) {
+	githubProjectRepo := persistGithubProjectRepo.New(db)
+	githubProjectApi := githubProjectApi.New(&http.Client{Timeout: 5 * time.Second}, cfg.Github.Token)
+
+	githubProjectUc := githubproject.New(githubProjectRepo, githubProjectApi)
+
+	err := githubProjectUc.RefreshMirror(ctx)
+	if err != nil {
+		db.Close()
+		l.Fatal(fmt.Errorf("app - refreshMirror - githubProjectUc.RefreshMirror: %w", err))
+	}
+}
+
+func runServer(ctx context.Context, cfg *config.Config, db *sql.DB, l *logger.Logger) {
+	shutdownTracing, err := tracing.New(ctx, tracing.Config{
+		Enabled:     cfg.Tracing.Enabled,
+		ServiceName: cfg.App.Name,
+		Version:     cfg.App.Version,
+		Prettier:    cfg.Tracing.Prettier,
+		SampleRate:  cfg.Tracing.SampleRate,
+	})
+	if err != nil {
+		db.Close()
+		l.Fatal(fmt.Errorf("app - runServer - tracing.New: %w", err))
+	}
+	defer func() {
+		if err := shutdownTracing(ctx); err != nil {
+			l.Error(fmt.Errorf("app - runServer - shutdownTracing: %w", err))
+		}
+	}()
 
 	jwtManager := jwt.New(cfg.JWT.Secret, cfg.JWT.TokenExpiry)
 	h := http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	shutdownCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	uc := initUseCases(db, cfg, jwtManager, &h)
 	s := initServer(cfg, uc, jwtManager, l)
-	scheduler, err := scheduler.NewScheduler(ctx, scheduler.GocronLogger{L: l}, uc.githubProject)
+	scheduler, err := scheduler.NewScheduler(shutdownCtx, scheduler.GocronLogger{L: l}, uc.githubProject)
 	if err != nil {
-		l.Error(fmt.Errorf("app - Run - scheduler.NewScheduler: %w", err))
+		db.Close()
+		l.Fatal(fmt.Errorf("app - runServer - scheduler.NewScheduler: %w", err))
 	}
 	s.Start()
-	waitForShutdown(s, l, scheduler)
+	scheduler.Start()
+	waitForShutdown(shutdownCtx, s, l, scheduler)
 }

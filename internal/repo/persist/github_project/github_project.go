@@ -6,6 +6,7 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Taya-san/portofolio-backend/internal/entity"
 )
@@ -39,7 +40,7 @@ func (r *Repo) UpStore(ctx context.Context, project *entity.GithubProject) error
 		project.Title,
 		project.Description,
 		string(langs),
-		project.CreatedAt,
+		project.CreatedAt.Format(time.RFC3339),
 		project.Body,
 	)
 	if err != nil {
@@ -52,6 +53,7 @@ func (r *Repo) UpStore(ctx context.Context, project *entity.GithubProject) error
 func (r *Repo) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.GithubProject, error) {
 	var result entity.GithubProject
 	var langs string
+	var createdAt string
 
 	err := r.QueryRowContext(ctx,
 		`
@@ -65,7 +67,7 @@ func (r *Repo) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.G
 		&result.Title,
 		&result.Description,
 		&langs,
-		&result.CreatedAt,
+		&createdAt,
 		&result.Body,
 	)
 	if err != nil {
@@ -78,6 +80,11 @@ func (r *Repo) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.G
 
 	if err := json.Unmarshal([]byte(langs), &result.Languages); err != nil {
 		return entity.GithubProject{}, fmt.Errorf("GithubProjectRepo - GetByProjectUrl - json.Unmarshal: %w", err)
+	}
+
+	result.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+	if err != nil {
+		return entity.GithubProject{}, fmt.Errorf("GithubProjectRepo - GetByProjectUrl - time.Parse: %w", err)
 	}
 
 	return result, nil
@@ -104,27 +111,33 @@ func (r *Repo) List(ctx context.Context) ([]entity.GithubProject, int, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var project entity.GithubProject
+		var result entity.GithubProject
 		var langs string
+		var createdAt string
 
 		if err := rows.Scan(
-			&project.ID,
-			&project.ProjectUrl,
-			&project.Title,
-			&project.Description,
+			&result.ID,
+			&result.ProjectUrl,
+			&result.Title,
+			&result.Description,
 			&langs,
-			&project.CreatedAt,
-			&project.Body,
+			&createdAt,
+			&result.Body,
 		); err != nil {
 			return nil, 0, fmt.Errorf("GithubProjectRepo - List - for rows.Scan: %w", err)
 		}
 
-		err := json.Unmarshal([]byte(langs), &project.Languages)
+		err := json.Unmarshal([]byte(langs), &result.Languages)
 		if err != nil {
 			return nil, 0, fmt.Errorf("GithubProjectRepo - List - json.Unmarshal: %w", err)
 		}
 
-		results = append(results, project)
+		result.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+		if err != nil {
+			return nil, 0, fmt.Errorf("GithubProjectRepo - List - time.Parse: %w", err)
+		}
+
+		results = append(results, result)
 	}
 
 	if err := rows.Err(); err != nil {

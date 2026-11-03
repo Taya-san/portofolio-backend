@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Taya-san/portofolio-backend/internal/entity"
 	"github.com/Taya-san/portofolio-backend/internal/repo/persist/user"
 	"github.com/Taya-san/portofolio-backend/pkg/jwt"
 )
@@ -21,7 +22,7 @@ func New(r user.UserRepo, j *jwt.Manager) User {
 }
 
 func (uc *UseCase) Login(ctx context.Context, userItem UserItem) (string, error) {
-	users, err := uc.repo.ListPermittedPasswordHashes(ctx)
+	users, err := uc.repo.ListPermittedPassword(ctx)
 	if err != nil {
 		return "", fmt.Errorf("UserUseCase - Login - uc.repo.ListPermittedPasswordHashes: %w", err)
 	}
@@ -39,5 +40,5 @@ func (uc *UseCase) Login(ctx context.Context, userItem UserItem) (string, error)
 		return token, nil
 	}
 
-	return "", fmt.Errorf("UserUseCase - Login - User Not Found: %w", err)
+	return "", fmt.Errorf("UserUseCase - Login - User Not Found: %w", entity.ErrInvalidCredentials)
 }

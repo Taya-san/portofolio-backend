@@ -27,7 +27,6 @@ type (
 		Languages   []string
 		CreatedAt   time.Time
 		Visible     bool
-		Custom      bool
 		Body        string
 	}
 )

@@ -5,5 +5,5 @@ CREATE TABLE github_projects (
   description   TEXT        NOT NULL DEFAULT '',
   languages     TEXT        NOT NULL DEFAULT '[]',
   created_at    TEXT        NOT NULL,
-  body          TEXT        NOT NULL DEFAULT '',
+  body          TEXT        NOT NULL DEFAULT ''
 )

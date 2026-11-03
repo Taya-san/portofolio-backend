@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Taya-san/portofolio-backend/internal/entity"
 )
@@ -25,14 +26,14 @@ func (r *Repo) Store(ctx context.Context, project *entity.Project) error {
 	}
 
 	_, err = r.ExecContext(ctx,
-		`INSERT INTO projects (id, project_url, title, languages, description, created_at, visible, custom, body)
+		`INSERT INTO projects (id, project_url, title, description, languages, created_at, visible, custom, body)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		project.ID,
 		project.ProjectUrl,
 		project.Title,
 		project.Description,
 		string(langs),
-		project.CreatedAt,
+		project.CreatedAt.Format(time.RFC3339),
 		project.Visible,
 		project.Custom,
 		project.Body,
@@ -47,6 +48,7 @@ func (r *Repo) Store(ctx context.Context, project *entity.Project) error {
 func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, error) {
 	var result entity.Project
 	var langs string
+	var createdAt string
 
 	err := r.QueryRowContext(ctx,
 		`SELECT id, project_url, title, description, languages, created_at, visible, custom, body
@@ -59,7 +61,7 @@ func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, e
 		&result.Title,
 		&result.Description,
 		&langs,
-		&result.CreatedAt,
+		&createdAt,
 		&result.Visible,
 		&result.Custom,
 		&result.Body,
@@ -77,6 +79,11 @@ func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, e
 		return entity.Project{}, fmt.Errorf("ProjectRepo - GetByID - json.Unmarshal: %w", err)
 	}
 
+	result.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+	if err != nil {
+		return entity.Project{}, fmt.Errorf("ProjectRepo - GetByID - time.Parse: %w", err)
+	}
+
 	return result, nil
 }
 
@@ -87,7 +94,7 @@ func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project
 	where := "WHERE 1=1"
 
 	if !filter.All {
-		where += "AND visible = true"
+		where += " AND visible = true"
 	}
 
 	err := r.QueryRowContext(ctx,
@@ -107,28 +114,35 @@ func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project
 	defer rows.Close()
 
 	for rows.Next() {
-		var project entity.Project
+		var result entity.Project
 		var langs string
+		var createdAt string
+
 		if err := rows.Scan(
-			&project.ID,
-			&project.ProjectUrl,
-			&project.Title,
-			&project.Description,
+			&result.ID,
+			&result.ProjectUrl,
+			&result.Title,
+			&result.Description,
 			&langs,
-			&project.CreatedAt,
-			&project.Visible,
-			&project.Custom,
-			&project.Body,
+			&createdAt,
+			&result.Visible,
+			&result.Custom,
+			&result.Body,
 		); err != nil {
 			return nil, 0, fmt.Errorf("ProjectRepo - List - for rows.Scan: %w", err)
 		}
 
-		err := json.Unmarshal([]byte(langs), &project.Languages)
+		err := json.Unmarshal([]byte(langs), &result.Languages)
 		if err != nil {
 			return nil, 0, fmt.Errorf("ProjectRepo - List - json.Unmarshal: %w", err)
 		}
 
-		results = append(results, project)
+		result.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+		if err != nil {
+			return nil, 0, fmt.Errorf("ProjectRepo - List - time.Parse: %w", err)
+		}
+
+		results = append(results, result)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -152,7 +166,7 @@ func (r *Repo) Update(ctx context.Context, project *entity.Project) error {
 		project.Title,
 		project.Description,
 		string(langs),
-		project.CreatedAt,
+		project.CreatedAt.Format(time.RFC3339),
 		project.Visible,
 		project.Custom,
 		project.Body,
@@ -208,6 +222,9 @@ func (r *Repo) UpStore(ctx context.Context, project *entity.Project) error {
 		title = excluded.title,
 		description = excluded.description,
 		languages = excluded.languages,
+		created_at = excluded.created_at,
+		visible = excluded.visible,
+		custom = excluded.custom,
 		body = excluded.body
 		WHERE custom = 0
 		`,
@@ -216,7 +233,7 @@ func (r *Repo) UpStore(ctx context.Context, project *entity.Project) error {
 		project.Title,
 		project.Description,
 		string(langs),
-		project.CreatedAt,
+		project.CreatedAt.Format(time.RFC3339),
 		project.Visible,
 		project.Custom,
 		project.Body,

@@ -41,12 +41,13 @@ func (r *V1) createProject(ctx *fiber.Ctx) error {
 
 	project, err := r.p.Create(ctx.UserContext(),
 		project.ProjectItem{
-			ProjectUrl: body.ProjectUrl,
-			Title:      body.Title,
-			Languages:  body.Languages,
-			Visible:    body.Visible,
-			Custom:     body.Custom,
-			Body:       body.Body,
+			ProjectUrl:  body.ProjectUrl,
+			Title:       body.Title,
+			Description: body.Description,
+			Languages:   body.Languages,
+			CreatedAt:   body.CreatedAt,
+			Visible:     body.Visible,
+			Body:        body.Body,
 		},
 	)
 	if err != nil {
@@ -161,12 +162,12 @@ func (r *V1) updateProject(ctx *fiber.Ctx) error {
 
 	project, err := r.p.Update(ctx.UserContext(), projectID,
 		project.ProjectItem{
-			ProjectUrl: body.ProjectUrl,
-			Title:      body.Title,
-			Languages:  body.Languages,
-			Visible:    body.Visible,
-			Custom:     body.Custom,
-			Body:       body.Body,
+			ProjectUrl:  body.ProjectUrl,
+			Title:       body.Title,
+			Languages:   body.Languages,
+			Description: body.Description,
+			Visible:     body.Visible,
+			Body:        body.Body,
 		},
 	)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"github.com/Taya-san/portofolio-backend/internal/entity"
 )
 
-//go:generate mockgen -source=contracts.go -destination=.../usecase/mocks_repo_githubproject_test.go -package=usecase_test
+//go:generate mockgen -source=contracts.go -destination=../../../usecase/mocks_repo_githubproject_test.go -package=usecase_test
 
 type (
 	GithubProjectRepo interface {

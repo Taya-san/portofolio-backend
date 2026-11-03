@@ -33,10 +33,10 @@ func endSpan(span trace.Span, err error) {
 	span.End()
 }
 
-func (ur *tracedRepo) ListPermittedPasswordHashes(ctx context.Context) ([]entity.User, error) {
+func (ur *tracedRepo) ListPermittedPassword(ctx context.Context) ([]entity.User, error) {
 	ctx, span := startSpan(ctx, "UserRepo.ListPermittedPasswordHashes")
 
-	results, err := ur.next.ListPermittedPasswordHashes(ctx)
+	results, err := ur.next.ListPermittedPassword(ctx)
 	endSpan(span, err)
 
 	return results, err
