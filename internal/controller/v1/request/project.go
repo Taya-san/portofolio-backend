@@ -11,7 +11,7 @@ type (
 		CreatedAt   time.Time `json:"createdAt" validate:"required"`
 		Visible     bool      `json:"visible" validate:"required"`
 		Body        string    `json:"body" validate:"required"`
-	} // @name v1.CreateProject
+	} //	@name	v1.CreateProject
 
 	UpdateProject struct {
 		ProjectUrl  string    `json:"project_url" validate:"omitempty"`
@@ -21,5 +21,5 @@ type (
 		CreatedAt   time.Time `json:"createdAt" validate:"omitempty"`
 		Visible     bool      `json:"visible" validate:"omitempty"`
 		Body        string    `json:"body" validate:"omitempty"`
-	} // @name v1.UpdateProject
+	} //	@name	v1.UpdateProject
 )

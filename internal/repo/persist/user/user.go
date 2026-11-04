@@ -15,7 +15,7 @@ func New(cfg *config.Config) UserRepo {
 	return newTraced(&Repo{cfg})
 }
 
-func (r *Repo) ListPermittedPassword(ctx context.Context) ([]entity.User, error) {
+func (r *Repo) ListPermittedPassword(_ context.Context) ([]entity.User, error) {
 	var users []entity.User
 
 	for _, password := range r.User.Password {

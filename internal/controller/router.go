@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Taya-san/portofolio-backend/config"
+	_ "github.com/Taya-san/portofolio-backend/docs"
 	"github.com/Taya-san/portofolio-backend/internal/controller/middleware"
 	v1 "github.com/Taya-san/portofolio-backend/internal/controller/v1"
 	githubproject "github.com/Taya-san/portofolio-backend/internal/usecase/github_project"

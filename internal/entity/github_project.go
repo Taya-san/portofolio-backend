@@ -10,4 +10,4 @@ type GithubProject struct {
 	Languages   []string  `json:"languages"`
 	CreatedAt   time.Time `json:"createdAt"`
 	Body        string    `json:"body"`
-} // @name entity.GithubProject
+} //	@name	entity.GithubProject

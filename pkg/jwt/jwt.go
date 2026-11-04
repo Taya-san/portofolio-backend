@@ -45,7 +45,6 @@ func (m *Manager) ParseToken(tokenString string) (string, error) {
 
 			return []byte(m.secret), nil
 		})
-
 	if err != nil {
 		return "", fmt.Errorf("jwt - ParseToken - jwtlib.Parse: %w", err)
 	}

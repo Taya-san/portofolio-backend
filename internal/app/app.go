@@ -17,7 +17,7 @@ import (
 	persistGithubProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/github_project"
 	persistProjectRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/project"
 	persistUserRepo "github.com/Taya-san/portofolio-backend/internal/repo/persist/user"
-	githubProjectApi "github.com/Taya-san/portofolio-backend/internal/repo/webapi/github_project"
+	webGithubProjectApi "github.com/Taya-san/portofolio-backend/internal/repo/webapi/github_project"
 	"github.com/Taya-san/portofolio-backend/internal/scheduler"
 	githubproject "github.com/Taya-san/portofolio-backend/internal/usecase/github_project"
 	"github.com/Taya-san/portofolio-backend/internal/usecase/project"
@@ -40,10 +40,10 @@ func initUseCases(db *sql.DB, cfg *config.Config, jwtManager *jwt.Manager, h *ht
 	projectRepo := persistProjectRepo.New(db)
 	userRepo := persistUserRepo.New(cfg)
 	githubProjectRepo := persistGithubProjectRepo.New(db)
-	githubProjectApi := githubProjectApi.New(h, cfg.Github.Token)
+	githubProjectApi := webGithubProjectApi.New(h, cfg.Github.Token)
 
 	return useCases{
-		project:       project.New(projectRepo),
+		project:       project.New(projectRepo, githubProjectRepo),
 		user:          user.New(userRepo, jwtManager),
 		githubProject: githubproject.New(githubProjectRepo, githubProjectApi),
 	}
@@ -56,26 +56,26 @@ func initServer(cfg *config.Config, uc useCases, jwtManager *jwt.Manager, l logg
 	return httpServer
 }
 
-func waitForShutdown(ctx context.Context, s *httpserver.Server, l logger.Interface, scheduler gocron.Scheduler) {
-
+func waitForShutdown(ctx context.Context, s *httpserver.Server, l logger.Interface, sch gocron.Scheduler) {
 	select {
 	case <-ctx.Done():
-		l.Info("app - waitForShutdown - kill/term signal recieved")
+		l.Info("app - waitForShutdown - kill/term signal received")
 	case err := <-s.Notify():
 		l.Error(fmt.Errorf("app - waitForShutdown - httpserver.Server.Notify: %w", err))
 	}
 
-	shutdownServer(s, l, scheduler)
+	shutdownServer(s, l, sch)
 }
 
-func shutdownServer(s *httpserver.Server, l logger.Interface, scheduler gocron.Scheduler) {
+func shutdownServer(s *httpserver.Server, l logger.Interface, sch gocron.Scheduler) {
 	if err := s.Shutdown(); err != nil {
 		l.Error(fmt.Errorf("app - shutdownServer - httpserver.Server.Shutdown: %w", err))
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := scheduler.ShutdownWithContext(ctx); err != nil {
+	if err := sch.ShutdownWithContext(ctx); err != nil {
 		l.Error(fmt.Errorf("app - shutdownServer - gocron.Scheduler.ShutdownWithContext: %w", err))
 	}
 }
@@ -91,6 +91,7 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		l.Fatal(fmt.Errorf("app - Run - sql.Open: %w", err))
 	}
+
 	db.SetMaxOpenConns(1)
 	defer db.Close()
 
@@ -129,7 +130,7 @@ func printGlobalHelp() {
 
 func refreshMirror(ctx context.Context, cfg *config.Config, db *sql.DB, l *logger.Logger) {
 	githubProjectRepo := persistGithubProjectRepo.New(db)
-	githubProjectApi := githubProjectApi.New(&http.Client{Timeout: 5 * time.Second}, cfg.Github.Token)
+	githubProjectApi := webGithubProjectApi.New(&http.Client{Timeout: 5 * time.Second}, cfg.Github.Token)
 
 	githubProjectUc := githubproject.New(githubProjectRepo, githubProjectApi)
 
@@ -168,12 +169,14 @@ func runServer(ctx context.Context, cfg *config.Config, db *sql.DB, l *logger.Lo
 
 	uc := initUseCases(db, cfg, jwtManager, &h)
 	s := initServer(cfg, uc, jwtManager, l)
-	scheduler, err := scheduler.NewScheduler(shutdownCtx, scheduler.GocronLogger{L: l}, uc.githubProject)
+
+	sch, err := scheduler.NewScheduler(shutdownCtx, scheduler.GocronLogger{L: l}, uc.githubProject)
 	if err != nil {
 		db.Close()
 		l.Fatal(fmt.Errorf("app - runServer - scheduler.NewScheduler: %w", err))
 	}
+
 	s.Start()
-	scheduler.Start()
-	waitForShutdown(shutdownCtx, s, l, scheduler)
+	sch.Start()
+	waitForShutdown(shutdownCtx, s, l, sch)
 }

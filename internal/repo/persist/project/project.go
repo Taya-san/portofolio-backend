@@ -46,9 +46,11 @@ func (r *Repo) Store(ctx context.Context, project *entity.Project) error {
 }
 
 func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, error) {
-	var result entity.Project
-	var langs string
-	var createdAt string
+	var (
+		result    entity.Project
+		langs     string
+		createdAt string
+	)
 
 	err := r.QueryRowContext(ctx,
 		`SELECT id, project_url, title, description, languages, created_at, visible, custom, body
@@ -88,8 +90,10 @@ func (r *Repo) GetByID(ctx context.Context, projectID string) (entity.Project, e
 }
 
 func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project, int, error) {
-	var results []entity.Project
-	var total int
+	var (
+		results []entity.Project
+		total   int
+	)
 
 	where := "WHERE 1=1"
 
@@ -114,9 +118,11 @@ func (r *Repo) List(ctx context.Context, filter ProjectFilter) ([]entity.Project
 	defer rows.Close()
 
 	for rows.Next() {
-		var result entity.Project
-		var langs string
-		var createdAt string
+		var (
+			result    entity.Project
+			langs     string
+			createdAt string
+		)
 
 		if err := rows.Scan(
 			&result.ID,
@@ -175,10 +181,12 @@ func (r *Repo) Update(ctx context.Context, project *entity.Project) error {
 	if err != nil {
 		return fmt.Errorf("ProjectRepo - Update - for r.ExecContext: %w", err)
 	}
+
 	n, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("ProjectRepo - Update - for result.RowsAffected: %w", err)
 	}
+
 	if n == 0 {
 		return entity.ErrProjectNotFound
 	}

@@ -40,5 +40,5 @@ func (uc *UseCase) Login(ctx context.Context, userItem UserItem) (string, error)
 		return token, nil
 	}
 
-	return "", fmt.Errorf("UserUseCase - Login - User Not Found: %w", entity.ErrInvalidCredentials)
+	return "", entity.ErrInvalidCredentials
 }

@@ -33,7 +33,7 @@ func endSpan(span trace.Span, err error) {
 	span.End()
 }
 
-func (p *tracedUseCase) Create(ctx context.Context, projectItem ProjectItem) (entity.Project, error) {
+func (p *tracedUseCase) Create(ctx context.Context, projectItem *ProjectItem) (entity.Project, error) {
 	ctx, span := startSpan(ctx, "ProjectUseCase.Create", attribute.String("project.url", projectItem.ProjectUrl))
 
 	result, err := p.next.Create(ctx, projectItem)
@@ -60,7 +60,7 @@ func (p *tracedUseCase) List(ctx context.Context, all bool) ([]entity.Project, i
 	return results, n, err
 }
 
-func (p *tracedUseCase) Update(ctx context.Context, projectID string, projectItem ProjectItem) (entity.Project, error) {
+func (p *tracedUseCase) Update(ctx context.Context, projectID string, projectItem *ProjectItem) (entity.Project, error) {
 	ctx, span := startSpan(ctx, "ProjectUseCase.Update", attribute.String("project.id", projectID))
 
 	result, err := p.next.Update(ctx, projectID, projectItem)

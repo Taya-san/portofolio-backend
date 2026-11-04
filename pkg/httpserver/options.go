@@ -24,6 +24,7 @@ func ReadTimeout(timeout time.Duration) Option {
 		s.readTimeout = timeout
 	}
 }
+
 func WriteTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
 		s.writeTimeout = timeout

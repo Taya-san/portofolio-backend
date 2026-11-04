@@ -52,7 +52,9 @@ func (r *Repo) UpStore(ctx context.Context, project *entity.GithubProject) error
 
 func (r *Repo) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.GithubProject, error) {
 	var result entity.GithubProject
+
 	var langs string
+
 	var createdAt string
 
 	err := r.QueryRowContext(ctx,
@@ -92,6 +94,7 @@ func (r *Repo) GetByProjectUrl(ctx context.Context, projectUrl string) (entity.G
 
 func (r *Repo) List(ctx context.Context) ([]entity.GithubProject, int, error) {
 	var results []entity.GithubProject
+
 	var total int
 
 	err := r.QueryRowContext(ctx,
@@ -111,9 +114,11 @@ func (r *Repo) List(ctx context.Context) ([]entity.GithubProject, int, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var result entity.GithubProject
-		var langs string
-		var createdAt string
+		var (
+			result    entity.GithubProject
+			langs     string
+			createdAt string
+		)
 
 		if err := rows.Scan(
 			&result.ID,

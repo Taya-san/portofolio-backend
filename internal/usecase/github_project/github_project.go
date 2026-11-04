@@ -27,8 +27,8 @@ func (uc *UseCase) RefreshMirror(ctx context.Context) error {
 		return fmt.Errorf("GithubProjectUseCase - RefreshMirror - uc.webApi.Fetch: %w", err)
 	}
 
-	for _, githubProject := range fetchedGithubProjects {
-		err = uc.repoPersist.UpStore(ctx, &githubProject)
+	for idx := range fetchedGithubProjects {
+		err = uc.repoPersist.UpStore(ctx, &fetchedGithubProjects[idx])
 		if err != nil {
 			return fmt.Errorf("GithubProjectUseCase - RefreshMirror - uc.repoPersist.UpStore: %w", err)
 		}

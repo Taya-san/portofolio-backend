@@ -26,16 +26,19 @@ func NewScheduler(
 		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Scheduler - NewScheduler - gocron.NewScheduler: %w", err)
+		return nil, fmt.Errorf("scheduler - NewScheduler - gocron.NewScheduler: %w", err)
 	}
 
 	jobs = append(jobs, project.GithubProjectsDailyRefresher(uc))
 
 	for _, job := range jobs {
-		scheduler.NewJob(
+		_, err := scheduler.NewJob(
 			job.JobDef,
 			job.Task,
 		)
+		if err != nil {
+			return nil, fmt.Errorf("scheduler - NewScheduler - scheduler.NewJob: %w", err)
+		}
 	}
 
 	return scheduler, nil

@@ -12,4 +12,4 @@ type Project struct {
 	Visible     bool      `json:"visible"`
 	Custom      bool      `json:"custom"`
 	Body        string    `json:"body"`
-} // @name entity.Project
+} //	@name	entity.Project

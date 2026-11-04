@@ -11,10 +11,10 @@ import (
 
 type (
 	Project interface {
-		Create(ctx context.Context, projectItem ProjectItem) (entity.Project, error)
+		Create(ctx context.Context, projectItem *ProjectItem) (entity.Project, error)
 		Get(ctx context.Context, projectID string) (entity.Project, error)
 		List(ctx context.Context, all bool) ([]entity.Project, int, error)
-		Update(ctx context.Context, projectID string, projectItem ProjectItem) (entity.Project, error)
+		Update(ctx context.Context, projectID string, projectItem *ProjectItem) (entity.Project, error)
 		Delete(ctx context.Context, projectID string) error
 		SyncAll(ctx context.Context) error
 		SyncByProjectID(ctx context.Context, projectID string) error

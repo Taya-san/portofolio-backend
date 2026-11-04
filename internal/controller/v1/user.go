@@ -11,18 +11,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// @Summary     Login
-// @Description Authenticate user and get JWT token
-// @ID          login
-// @Tags        auth
-// @Accept      json
-// @Produce     json
-// @Param       request body     request.Login true "Login credentials"
-// @Success     200     {object} response.Token
-// @Failure     400     {object} response.Error
-// @Failure     401     {object} response.Error
-// @Failure     500     {object} response.Error
-// @Router      /auth/login [post]
+// @Summary		Login
+// @Description	Authenticate user and get JWT token
+// @ID				login
+// @Tags			auth
+// @Accept			json
+// @Produce		json
+// @Param			request	body		request.Login	true	"Login credentials"
+// @Success		200		{object}	response.Token
+// @Failure		400		{object}	response.Error
+// @Failure		401		{object}	response.Error
+// @Failure		500		{object}	response.Error
+// @Router			/auth/login [post]
 func (r *V1) login(ctx *fiber.Ctx) error {
 	var body request.Login
 

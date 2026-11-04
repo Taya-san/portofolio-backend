@@ -16,13 +16,15 @@ type UseCase struct {
 	githubRepo githubproject.GithubProjectRepo
 }
 
-func New(r project.ProjectRepo) Project {
-	return newTraced(&UseCase{repo: r})
+func New(r project.ProjectRepo, g githubproject.GithubProjectRepo) Project {
+	return newTraced(&UseCase{
+		repo:       r,
+		githubRepo: g,
+	})
 }
 
-func (uc *UseCase) Create(ctx context.Context, projectItem ProjectItem) (entity.Project, error) {
-
-	project := entity.Project{
+func (uc *UseCase) Create(ctx context.Context, projectItem *ProjectItem) (entity.Project, error) {
+	prj := entity.Project{
 		ID:          uuid.New().String(),
 		ProjectUrl:  projectItem.ProjectUrl,
 		Title:       projectItem.Title,
@@ -34,21 +36,21 @@ func (uc *UseCase) Create(ctx context.Context, projectItem ProjectItem) (entity.
 		Body:        projectItem.Body,
 	}
 
-	err := uc.repo.Store(ctx, &project)
+	err := uc.repo.Store(ctx, &prj)
 	if err != nil {
 		return entity.Project{}, fmt.Errorf("ProjectUseCase - Create - uc.repo.Store: %w", err)
 	}
 
-	return project, nil
+	return prj, nil
 }
 
 func (uc *UseCase) Get(ctx context.Context, projectID string) (entity.Project, error) {
-	project, err := uc.repo.GetByID(ctx, projectID)
+	prj, err := uc.repo.GetByID(ctx, projectID)
 	if err != nil {
 		return entity.Project{}, fmt.Errorf("ProjectUseCase - Get - uc.repo.GetByID: %w", err)
 	}
 
-	return project, nil
+	return prj, nil
 }
 
 func (uc *UseCase) List(ctx context.Context, all bool) ([]entity.Project, int, error) {
@@ -63,12 +65,12 @@ func (uc *UseCase) List(ctx context.Context, all bool) ([]entity.Project, int, e
 	return projects, total, nil
 }
 
-func (uc *UseCase) Update(ctx context.Context, projectID string, projectItem ProjectItem) (entity.Project, error) {
+func (uc *UseCase) Update(ctx context.Context, projectID string, projectItem *ProjectItem) (entity.Project, error) {
 	if strings.TrimSpace(projectItem.Title) == "" {
 		return entity.Project{}, entity.ErrTitleInvalid
 	}
 
-	project, err := uc.repo.GetByID(
+	prj, err := uc.repo.GetByID(
 		ctx,
 		projectID,
 	)
@@ -76,20 +78,20 @@ func (uc *UseCase) Update(ctx context.Context, projectID string, projectItem Pro
 		return entity.Project{}, fmt.Errorf("ProjectUseCase - Update - uc.repo.GetById: %w", err)
 	}
 
-	project.ProjectUrl = projectItem.ProjectUrl
-	project.Title = projectItem.Title
-	project.Description = projectItem.Description
-	project.Languages = projectItem.Languages
-	project.Visible = projectItem.Visible
-	project.Custom = true
-	project.Body = projectItem.Body
+	prj.ProjectUrl = projectItem.ProjectUrl
+	prj.Title = projectItem.Title
+	prj.Description = projectItem.Description
+	prj.Languages = projectItem.Languages
+	prj.Visible = projectItem.Visible
+	prj.Custom = true
+	prj.Body = projectItem.Body
 
-	err = uc.repo.Update(ctx, &project)
+	err = uc.repo.Update(ctx, &prj)
 	if err != nil {
 		return entity.Project{}, fmt.Errorf("ProjectUseCase - Update - uc.repo.Update: %w", err)
 	}
 
-	return project, nil
+	return prj, nil
 }
 
 func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
@@ -107,17 +109,17 @@ func (uc *UseCase) SyncAll(ctx context.Context) error {
 		return fmt.Errorf("ProjectUseCase - SyncAll - uc.githubRepo.List: %w", err)
 	}
 
-	for _, githubProject := range githubProjects {
+	for idx, _ := range githubProjects {
 		err := uc.repo.UpStore(ctx, &entity.Project{
 			ID:          uuid.NewString(),
-			ProjectUrl:  githubProject.ProjectUrl,
-			Title:       githubProject.Title,
-			Description: githubProject.Description,
-			Languages:   githubProject.Languages,
-			CreatedAt:   githubProject.CreatedAt,
+			ProjectUrl:  githubProjects[idx].ProjectUrl,
+			Title:       githubProjects[idx].Title,
+			Description: githubProjects[idx].Description,
+			Languages:   githubProjects[idx].Languages,
+			CreatedAt:   githubProjects[idx].CreatedAt,
 			Visible:     true,
 			Custom:      false,
-			Body:        githubProject.Body,
+			Body:        githubProjects[idx].Body,
 		})
 		if err != nil {
 			return fmt.Errorf("ProjectUseCase - SyncAll - uc.repo.UpStore: %w", err)
@@ -128,12 +130,12 @@ func (uc *UseCase) SyncAll(ctx context.Context) error {
 }
 
 func (uc *UseCase) SyncByProjectID(ctx context.Context, projectID string) error {
-	project, err := uc.repo.GetByID(ctx, projectID)
+	prj, err := uc.repo.GetByID(ctx, projectID)
 	if err != nil {
 		return fmt.Errorf("ProjectUseCase - SyncByProjectID - uc.repo.GetByID: %w", err)
 	}
 
-	githubProject, err := uc.githubRepo.GetByProjectUrl(ctx, project.ProjectUrl)
+	githubProject, err := uc.githubRepo.GetByProjectUrl(ctx, prj.ProjectUrl)
 	if err != nil {
 		return fmt.Errorf("ProjectUseCase - SyncAll - uc.githubRepo.GetByProjectUrl: %w", err)
 	}

@@ -32,10 +32,10 @@ type Repo struct {
 	GithubToken string
 }
 
-func New(h *http.Client, GithubToken string) GithubProjectApi {
+func New(h *http.Client, githubToken string) GithubProjectApi {
 	return newTraced(&Repo{
 		h,
-		GithubToken,
+		githubToken,
 	})
 }
 
@@ -67,7 +67,7 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 		req, err := http.NewRequestWithContext(ctx,
 			http.MethodGet,
 			url,
-			nil,
+			http.NoBody,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - http.NewRequestWithContext: %w", err)
@@ -87,16 +87,19 @@ func (r *Repo) fetchUserProjects(ctx context.Context) ([]userProject, error) {
 		if resp.StatusCode != http.StatusOK {
 			remaining := header.Get("X-RateLimit-Remaining")
 			reset := header.Get("X-RateLimit-Reset")
+
 			resp.Body.Close()
 
 			if remaining == "0" {
-				return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: rate limit exhausted, reset at epoch %s", reset)
+				return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %w, reset at epoch %s", entity.ErrRateLimit, reset)
 			}
-			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %s", resp.Status)
+
+			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - r.Do: %w, %s", entity.ErrStatusNotOK, resp.Status)
 		}
 
 		if err := json.UnmarshalRead(resp.Body, &userProjects); err != nil {
 			resp.Body.Close()
+
 			return nil, fmt.Errorf("GithubProjectApi - fetchUserProjects - json.UnmarshalRead: %w", err)
 		}
 
@@ -116,8 +119,10 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 	allProjects := make([]entity.GithubProject, 0, len(allUserProjects))
 
 	for _, userProject := range allUserProjects {
-		var fetchedLangs map[string]int
-		var projectBody string
+		var (
+			fetchedLangs map[string]int
+			projectBody  string
+		)
 
 		url := fmt.Sprintf(
 			"https://api.github.com/repos/%s/readme",
@@ -127,7 +132,7 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 		req, err := http.NewRequestWithContext(ctx,
 			http.MethodGet,
 			url,
-			nil,
+			http.NoBody,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - http.NewRequestWithContext: %w", err)
@@ -144,27 +149,29 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 
 		header := resp.Header
 
-		if resp.StatusCode == http.StatusNotFound {
+		switch resp.StatusCode {
+		case http.StatusNotFound:
 			projectBody = ""
-
-		} else if resp.StatusCode != http.StatusOK {
-			remaining := header.Get("X-RateLimit-Remaining")
-			reset := header.Get("X-RateLimit-Reset")
-			resp.Body.Close()
-
-			if remaining == "0" {
-				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: rate limit exhausted, reset at epoch %s", reset)
-			}
-
-			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %s", resp.Status)
-		} else {
+		case http.StatusOK:
 			projectBodyBytes, err := io.ReadAll(resp.Body)
 			resp.Body.Close()
+
 			if err != nil {
 				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - io.ReadAll: %w", err)
 			}
 
 			projectBody = string(projectBodyBytes)
+		default:
+			remaining := header.Get("X-RateLimit-Remaining")
+			reset := header.Get("X-RateLimit-Reset")
+
+			resp.Body.Close()
+
+			if remaining == "0" {
+				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w, reset at epoch %s", entity.ErrRateLimit, reset)
+			}
+
+			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w, %s", entity.ErrStatusNotOK, resp.Status)
 		}
 
 		url = fmt.Sprintf(
@@ -175,7 +182,7 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 		req, err = http.NewRequestWithContext(ctx,
 			http.MethodGet,
 			url,
-			nil,
+			http.NoBody,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - http.NewRequestWithContext: %w", err)
@@ -195,18 +202,22 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 		if resp.StatusCode != http.StatusOK {
 			remaining := header.Get("X-RateLimit-Remaining")
 			reset := header.Get("X-RateLimit-Reset")
+
 			resp.Body.Close()
 
 			if remaining == "0" {
-				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: rate limit exhausted, reset at epoch %s", reset)
+				return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w, reset at epoch %s", entity.ErrRateLimit, reset)
 			}
-			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %s", resp.Status)
+
+			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - r.Do: %w, %s", entity.ErrStatusNotOK, resp.Status)
 		}
 
 		if err := json.UnmarshalRead(resp.Body, &fetchedLangs); err != nil {
 			resp.Body.Close()
+
 			return nil, fmt.Errorf("GithubProjectApi - fetchProjectData - json.UnmarshalRead: %w", err)
 		}
+
 		resp.Body.Close()
 
 		langs := make([]lang, 0, len(fetchedLangs))
@@ -221,7 +232,7 @@ func (r *Repo) fetchProjectData(ctx context.Context, allUserProjects []userProje
 		}
 
 		slices.SortFunc(langs,
-			func(a lang, b lang) int {
+			func(a, b lang) int {
 				return b.bytes - a.bytes
 			},
 		)
