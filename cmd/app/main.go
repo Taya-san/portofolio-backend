@@ -5,6 +5,7 @@ import (
 
 	"github.com/Taya-san/portofolio-backend/config"
 	"github.com/Taya-san/portofolio-backend/internal/app"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {

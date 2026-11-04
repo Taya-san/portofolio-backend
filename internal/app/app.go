@@ -108,24 +108,40 @@ func Run(cfg *config.Config) {
 
 	args := os.Args[1:]
 
-	if len(args) > 1 && !strings.HasPrefix(args[0], "-") {
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		cmd := strings.Join(args, " ")
 		switch cmd {
 		case "serve":
 			runServer(ctx, cfg, db, l)
 		case "refresh mirror":
 			refreshMirror(ctx, cfg, db, l)
-		default:
-			printGlobalHelp()
+		case "sync all":
+			syncAll(ctx, db, l)
 		}
+	} else {
+		printGlobalHelp()
 	}
 }
 
 func printGlobalHelp() {
 	fmt.Println("Usage: backend <command>")
 	fmt.Println("\nAvailable Commands:")
-	fmt.Println("		serve								start the portofolio-website backend server")
-	fmt.Println("		refresh mirror			refresh the github projects mirror")
+	fmt.Println("   serve              start the portofolio-website backend server")
+	fmt.Println("   refresh mirror     refresh the github projects mirror")
+	fmt.Println("   sync all           sync projects table with github projects mirror")
+}
+
+func syncAll(ctx context.Context, db *sql.DB, l *logger.Logger) {
+	projectRepo := persistProjectRepo.New(db)
+	githubProjectRepo := persistGithubProjectRepo.New(db)
+
+	projectUc := project.New(projectRepo, githubProjectRepo)
+
+	err := projectUc.SyncAll(ctx)
+	if err != nil {
+		db.Close()
+		l.Fatal(fmt.Errorf("app - syncAll - projectUC.SyncAll: %w", err))
+	}
 }
 
 func refreshMirror(ctx context.Context, cfg *config.Config, db *sql.DB, l *logger.Logger) {
